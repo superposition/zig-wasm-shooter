@@ -1,5 +1,3 @@
-const std = @import("std");
-
 // WebGL extern function imports - these will be provided by JavaScript
 extern fn gl_clear(r: f32, g: f32, b: f32, a: f32) void;
 extern fn gl_draw_quad(x: f32, y: f32, w: f32, h: f32, r: f32, g: f32, b: f32, a: f32) void;
@@ -55,8 +53,8 @@ var game_time: f32 = 0.0;
 // Input state
 var key_left: bool = false;
 var key_right: bool = false;
-var key_up: bool = false;
-var key_down: bool = false;
+var key_up_pressed: bool = false;
+var key_down_pressed: bool = false;
 
 // Initialize the game
 export fn init() void {
@@ -91,8 +89,8 @@ export fn init() void {
     game_time = 0.0;
     key_left = false;
     key_right = false;
-    key_up = false;
-    key_down = false;
+    key_up_pressed = false;
+    key_down_pressed = false;
 }
 
 // Update game logic
@@ -114,10 +112,10 @@ export fn update(delta_time: f32) void {
     if (key_right) {
         player.velocity.x = PLAYER_SPEED;
     }
-    if (key_up) {
+    if (key_up_pressed) {
         player.velocity.y = -PLAYER_SPEED;
     }
-    if (key_down) {
+    if (key_down_pressed) {
         player.velocity.y = PLAYER_SPEED;
     }
 
@@ -302,8 +300,8 @@ export fn key_down(key: u8) void {
     switch (key) {
         37, 65 => key_left = true, // Left arrow or 'A'
         39, 68 => key_right = true, // Right arrow or 'D'
-        38, 87 => key_up = true, // Up arrow or 'W'
-        40, 83 => key_down = true, // Down arrow or 'S'
+        38, 87 => key_up_pressed = true, // Up arrow or 'W'
+        40, 83 => key_down_pressed = true, // Down arrow or 'S'
         else => {},
     }
 }
@@ -313,8 +311,8 @@ export fn key_up(key: u8) void {
     switch (key) {
         37, 65 => key_left = false, // Left arrow or 'A'
         39, 68 => key_right = false, // Right arrow or 'D'
-        38, 87 => key_up = false, // Up arrow or 'W'
-        40, 83 => key_down = false, // Down arrow or 'S'
+        38, 87 => key_up_pressed = false, // Up arrow or 'W'
+        40, 83 => key_down_pressed = false, // Down arrow or 'S'
         else => {},
     }
 }

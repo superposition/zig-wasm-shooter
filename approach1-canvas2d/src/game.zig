@@ -1,5 +1,3 @@
-const std = @import("std");
-
 // Constants
 const PLAYER_SPEED: f32 = 200.0;
 const PLAYER_SIZE: f32 = 20.0;

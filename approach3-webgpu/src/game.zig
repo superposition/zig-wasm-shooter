@@ -1,5 +1,3 @@
-const std = @import("std");
-
 // WebGPU extern function imports from JavaScript
 extern fn gpu_begin_frame() void;
 extern fn gpu_end_frame() void;
@@ -308,7 +306,6 @@ export fn get_score() i32 {
 
 fn spawn_entity() void {
     const hallway_left = (CANVAS_WIDTH - HALLWAY_WIDTH) / 2.0;
-    const hallway_right = hallway_left + HALLWAY_WIDTH;
 
     // Randomly spawn either enemy or obstacle
     if (random() < 0.6) {
