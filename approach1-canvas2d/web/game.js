@@ -33,7 +33,7 @@ async function loadWasm() {
     try {
         updateStatus('Loading WASM module...');
 
-        const wasmPath = '../zig-out/bin/shooter.wasm';
+        const wasmPath = 'game-canvas2d.wasm';
         const response = await fetch(wasmPath);
 
         if (!response.ok) {

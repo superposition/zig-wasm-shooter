@@ -294,7 +294,7 @@ const wasmImports = {
 async function loadWASM() {
     try {
         // Fetch WASM file
-        const response = await fetch('game.wasm');
+        const response = await fetch('game-webgpu.wasm');
         const wasmBytes = await response.arrayBuffer();
 
         // Instantiate WASM module

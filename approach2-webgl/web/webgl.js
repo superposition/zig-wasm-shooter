@@ -181,7 +181,7 @@ async function loadWasm() {
         };
 
         // Load and instantiate WASM module
-        const response = await fetch('game.wasm');
+        const response = await fetch('game-webgl.wasm');
         const wasmBytes = await response.arrayBuffer();
         const wasmModule = await WebAssembly.instantiate(wasmBytes, wasmImports);
 
