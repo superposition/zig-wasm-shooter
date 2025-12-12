@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zig WASM Shooter</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+        }
+
+        h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+            color: #00ff88;
+        }
+
+        .subtitle {
+            font-size: 1.2em;
+            color: #aaa;
+            margin-bottom: 40px;
+        }
+
+        .approaches {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            max-width: 1200px;
+            width: 100%;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(0, 255, 136, 0.5);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .card h2 {
+            font-size: 1.5em;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card .badge {
+            font-size: 0.6em;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-weight: normal;
+        }
+
+        .badge-easy {
+            background: #22c55e;
+            color: #000;
+        }
+
+        .badge-medium {
+            background: #f59e0b;
+            color: #000;
+        }
+
+        .badge-advanced {
+            background: #ef4444;
+            color: #fff;
+        }
+
+        .card p {
+            color: #bbb;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .card .tech {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .card .tech span {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 5px 12px;
+            border-radius: 5px;
+            font-size: 0.85em;
+            color: #00ff88;
+        }
+
+        .controls {
+            margin-top: 50px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        .controls h3 {
+            margin-bottom: 15px;
+            color: #00ff88;
+        }
+
+        .controls p {
+            color: #bbb;
+            margin: 8px 0;
+        }
+
+        .controls kbd {
+            background: #333;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            border: 1px solid #555;
+        }
+
+        footer {
+            margin-top: 50px;
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        footer a {
+            color: #00ff88;
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <h1>Zig WASM Shooter</h1>
+    <p class="subtitle">A vertical shooter game in Zig + WebAssembly with three rendering approaches</p>
+
+    <div class="approaches">
+        <a href="approach1-canvas2d/" class="card">
+            <h2>Canvas2D <span class="badge badge-easy">Easy</span></h2>
+            <p>JavaScript renders the game using Canvas2D API. Zig handles game logic only. Simple and works everywhere.</p>
+            <div class="tech">
+                <span>Canvas2D</span>
+                <span>All Browsers</span>
+            </div>
+        </a>
+
+        <a href="approach2-webgl/" class="card">
+            <h2>WebGL <span class="badge badge-medium">Medium</span></h2>
+            <p>True GPU rendering via WebGL 1.0. Zig calls WebGL functions for rendering with shader support.</p>
+            <div class="tech">
+                <span>WebGL 1.0</span>
+                <span>GLSL Shaders</span>
+                <span>All Browsers</span>
+            </div>
+        </a>
+
+        <a href="approach3-webgpu/" class="card">
+            <h2>WebGPU <span class="badge badge-advanced">Advanced</span></h2>
+            <p>Modern GPU API with best performance. Uses WGSL shaders and cutting-edge browser features.</p>
+            <div class="tech">
+                <span>WebGPU</span>
+                <span>WGSL Shaders</span>
+                <span>Chrome/Edge 113+</span>
+            </div>
+        </a>
+    </div>
+
+    <div class="controls">
+        <h3>Controls</h3>
+        <p><kbd>W</kbd> / <kbd>Arrow Up</kbd> - Move up</p>
+        <p><kbd>A</kbd> / <kbd>Arrow Left</kbd> - Move left</p>
+        <p><kbd>S</kbd> / <kbd>Arrow Down</kbd> - Move down</p>
+        <p><kbd>D</kbd> / <kbd>Arrow Right</kbd> - Move right</p>
+        <p><kbd>Space</kbd> - Shoot</p>
+        <p style="margin-top: 15px;"><strong>Objective:</strong> Avoid red enemies and gray obstacles to survive!</p>
+    </div>
+
+    <footer>
+        Built with <a href="https://ziglang.org">Zig</a> + WebAssembly |
+        <a href="https://github.com/superposition/zig-wasm-shooter">Source on GitHub</a>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebGPU Shooter - Approach 3</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background-color: #1a1a1a;
+            font-family: 'Arial', sans-serif;
+            color: #ffffff;
+        }
+
+        h1 {
+            margin-bottom: 10px;
+            font-size: 2em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        #gameContainer {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        #gameCanvas {
+            border: 3px solid #4a4a4a;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+
+        #score {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #00ff88;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        #controls {
+            margin-top: 15px;
+            padding: 15px;
+            background-color: #2a2a2a;
+            border-radius: 8px;
+            max-width: 800px;
+        }
+
+        #controls h3 {
+            margin-top: 0;
+            color: #00ff88;
+        }
+
+        #controls p {
+            margin: 8px 0;
+            line-height: 1.6;
+        }
+
+        #controls ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+
+        #controls li {
+            margin: 5px 0;
+        }
+
+        .key {
+            display: inline-block;
+            padding: 2px 8px;
+            background-color: #3a3a3a;
+            border: 1px solid #555;
+            border-radius: 3px;
+            font-family: monospace;
+            font-weight: bold;
+        }
+
+        #error {
+            display: none;
+            padding: 15px;
+            background-color: #ff4444;
+            color: white;
+            border-radius: 8px;
+            margin-top: 15px;
+            max-width: 800px;
+        }
+    </style>
+</head>
+<body>
+    <h1>WebGPU Shooter (Approach 3)</h1>
+
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        <div id="score">Score: 0</div>
+    </div>
+
+    <div id="controls">
+        <h3>Controls</h3>
+        <p>Use <span class="key">Arrow Keys</span> or <span class="key">WASD</span> to move your ship (cyan triangle).</p>
+        <ul>
+            <li>Dodge orange triangular enemies</li>
+            <li>Dodge red rectangular obstacles</li>
+            <li>Stay within the gray hallway</li>
+            <li>+1 point for each enemy dodged</li>
+            <li>+2 points for each obstacle dodged</li>
+            <li>-5 points for hitting an enemy</li>
+            <li>-10 points for hitting an obstacle</li>
+        </ul>
+    </div>
+
+    <div id="error"></div>
+
+    <script src="webgpu.js"></script>
+</body>
+</html>
