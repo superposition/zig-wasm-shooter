@@ -16,6 +16,11 @@ const PLAYER_SPEED: f32 = 200.0;
 const ENEMY_SPEED: f32 = 150.0;
 const OBSTACLE_SPEED: f32 = 100.0;
 const SPAWN_INTERVAL: f32 = 2.0; // seconds
+const MAX_BULLETS: usize = 50;
+const BULLET_SPEED: f32 = 400.0;
+const BULLET_WIDTH: f32 = 4.0;
+const BULLET_HEIGHT: f32 = 10.0;
+const SHOOT_COOLDOWN: f32 = 0.15;
 
 // Game structures
 const Vec2 = struct {
@@ -39,6 +44,11 @@ const Obstacle = struct {
     active: bool,
 };
 
+const Bullet = struct {
+    pos: Vec2,
+    active: bool,
+};
+
 // Game state
 const MAX_ENEMIES = 10;
 const MAX_OBSTACLES = 8;
@@ -46,15 +56,18 @@ const MAX_OBSTACLES = 8;
 var player: Player = undefined;
 var enemies: [MAX_ENEMIES]Enemy = undefined;
 var obstacles: [MAX_OBSTACLES]Obstacle = undefined;
+var bullets: [MAX_BULLETS]Bullet = undefined;
 var score: i32 = 0;
 var spawn_timer: f32 = 0.0;
 var game_time: f32 = 0.0;
+var shoot_cooldown: f32 = 0.0;
 
 // Input state
 var key_left: bool = false;
 var key_right: bool = false;
 var key_up_pressed: bool = false;
 var key_down_pressed: bool = false;
+var key_space: bool = false;
 
 // Initialize the game
 export fn init() void {
@@ -84,13 +97,23 @@ export fn init() void {
         };
     }
 
+    // Initialize bullets
+    for (&bullets) |*bullet| {
+        bullet.* = Bullet{
+            .pos = Vec2{ .x = 0.0, .y = 0.0 },
+            .active = false,
+        };
+    }
+
     score = 0;
     spawn_timer = 0.0;
     game_time = 0.0;
+    shoot_cooldown = 0.0;
     key_left = false;
     key_right = false;
     key_up_pressed = false;
     key_down_pressed = false;
+    key_space = false;
 }
 
 // Update game logic
@@ -117,6 +140,13 @@ export fn update(delta_time: f32) void {
     }
     if (key_down_pressed) {
         player.velocity.y = PLAYER_SPEED;
+    }
+
+    // Handle shooting with spacebar
+    shoot_cooldown -= delta_time;
+    if (key_space and shoot_cooldown <= 0.0) {
+        spawnBullet();
+        shoot_cooldown = SHOOT_COOLDOWN;
     }
 
     // Update player position
@@ -202,6 +232,42 @@ export fn update(delta_time: f32) void {
             player.alive = false;
         }
     }
+
+    // Update bullets
+    for (&bullets) |*bullet| {
+        if (!bullet.active) continue;
+
+        // Move bullet up
+        bullet.pos.y -= BULLET_SPEED * delta_time;
+
+        // Deactivate if off screen
+        if (bullet.pos.y + BULLET_HEIGHT < 0) {
+            bullet.active = false;
+            continue;
+        }
+
+        // Check collision with enemies
+        for (&enemies) |*enemy| {
+            if (!enemy.active) continue;
+
+            if (checkCollision(
+                bullet.pos.x,
+                bullet.pos.y,
+                BULLET_WIDTH,
+                BULLET_HEIGHT,
+                enemy.pos.x,
+                enemy.pos.y,
+                ENEMY_SIZE,
+                ENEMY_SIZE,
+            )) {
+                // Destroy enemy and bullet
+                enemy.active = false;
+                bullet.active = false;
+                score += 10; // Points for killing enemy
+                break;
+            }
+        }
+    }
 }
 
 // Render the game using WebGL
@@ -247,6 +313,21 @@ export fn render() void {
             ENEMY_SIZE,
             1.0,
             0.0,
+            0.0,
+            1.0,
+        );
+    }
+
+    // Draw bullets (yellow)
+    for (bullets) |bullet| {
+        if (!bullet.active) continue;
+        gl_draw_quad(
+            bullet.pos.x,
+            bullet.pos.y,
+            BULLET_WIDTH,
+            BULLET_HEIGHT,
+            1.0,
+            1.0,
             0.0,
             1.0,
         );
@@ -302,6 +383,7 @@ export fn key_down(key: u8) void {
         39, 68 => key_right = true, // Right arrow or 'D'
         38, 87 => key_up_pressed = true, // Up arrow or 'W'
         40, 83 => key_down_pressed = true, // Down arrow or 'S'
+        32 => key_space = true, // Spacebar
         else => {},
     }
 }
@@ -313,6 +395,7 @@ export fn key_up(key: u8) void {
         39, 68 => key_right = false, // Right arrow or 'D'
         38, 87 => key_up_pressed = false, // Up arrow or 'W'
         40, 83 => key_down_pressed = false, // Down arrow or 'S'
+        32 => key_space = false, // Spacebar
         else => {},
     }
 }
@@ -325,6 +408,22 @@ export fn get_score() i32 {
 // Get player alive status
 export fn is_alive() bool {
     return player.alive;
+}
+
+// Helper function to spawn a bullet
+fn spawnBullet() void {
+    for (&bullets) |*bullet| {
+        if (!bullet.active) {
+            bullet.* = Bullet{
+                .pos = Vec2{
+                    .x = player.pos.x + PLAYER_WIDTH / 2.0 - BULLET_WIDTH / 2.0,
+                    .y = player.pos.y - BULLET_HEIGHT,
+                },
+                .active = true,
+            };
+            break;
+        }
+    }
 }
 
 // Helper function to spawn an enemy

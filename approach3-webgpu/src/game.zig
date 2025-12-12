@@ -18,6 +18,12 @@ const HALLWAY_WIDTH = 400.0;
 const MAX_ENEMIES = 10;
 const MAX_OBSTACLES = 5;
 const SPAWN_INTERVAL = 2.0;
+const MAX_BULLETS = 50;
+const BULLET_SPEED = 400.0;
+const BULLET_WIDTH = 4.0;
+const BULLET_HEIGHT = 10.0;
+const SHOOT_COOLDOWN = 0.15;
+const KEY_SPACE = 32;
 
 // Game state
 const Vec2 = struct {
@@ -41,6 +47,11 @@ const Obstacle = struct {
     active: bool,
 };
 
+const Bullet = struct {
+    pos: Vec2,
+    active: bool,
+};
+
 var game_state = struct {
     player: Player = .{
         .pos = .{ .x = CANVAS_WIDTH / 2.0, .y = CANVAS_HEIGHT - 100.0 },
@@ -49,8 +60,10 @@ var game_state = struct {
     },
     enemies: [MAX_ENEMIES]Enemy = [_]Enemy{.{ .pos = .{ .x = 0.0, .y = 0.0 }, .active = false }} ** MAX_ENEMIES,
     obstacles: [MAX_OBSTACLES]Obstacle = [_]Obstacle{.{ .pos = .{ .x = 0.0, .y = 0.0 }, .active = false }} ** MAX_OBSTACLES,
+    bullets: [MAX_BULLETS]Bullet = [_]Bullet{.{ .pos = .{ .x = 0.0, .y = 0.0 }, .active = false }} ** MAX_BULLETS,
     score: i32 = 0,
     spawn_timer: f32 = 0.0,
+    shoot_cooldown: f32 = 0.0,
     keys: [256]bool = [_]bool{false} ** 256,
     initialized: bool = false,
 }{};
@@ -94,11 +107,16 @@ export fn init() void {
     for (&game_state.obstacles) |*obstacle| {
         obstacle.active = false;
     }
+    for (&game_state.bullets) |*bullet| {
+        bullet.active = false;
+    }
 
     // Clear keys
     for (&game_state.keys) |*key| {
         key.* = false;
     }
+
+    game_state.shoot_cooldown = 0.0;
 
     // Seed RNG with a different value each time
     rng_state = 12345;
@@ -126,6 +144,13 @@ export fn update(delta_time: f32) void {
     }
     if (game_state.keys[KEY_DOWN] or game_state.keys[KEY_S]) {
         game_state.player.vel.y = PLAYER_SPEED;
+    }
+
+    // Handle shooting with spacebar
+    game_state.shoot_cooldown -= delta_time;
+    if (game_state.keys[KEY_SPACE] and game_state.shoot_cooldown <= 0.0) {
+        spawn_bullet();
+        game_state.shoot_cooldown = SHOOT_COOLDOWN;
     }
 
     // Update player position
@@ -209,6 +234,42 @@ export fn update(delta_time: f32) void {
             }
         }
     }
+
+    // Update bullets
+    for (&game_state.bullets) |*bullet| {
+        if (bullet.active) {
+            // Move bullet up
+            bullet.pos.y -= BULLET_SPEED * delta_time;
+
+            // Deactivate if off screen
+            if (bullet.pos.y + BULLET_HEIGHT < 0) {
+                bullet.active = false;
+                continue;
+            }
+
+            // Check collision with enemies
+            for (&game_state.enemies) |*enemy| {
+                if (enemy.active) {
+                    if (check_collision_rect(
+                        bullet.pos.x,
+                        bullet.pos.y,
+                        BULLET_WIDTH,
+                        BULLET_HEIGHT,
+                        enemy.pos.x - ENEMY_SIZE / 2.0,
+                        enemy.pos.y - ENEMY_SIZE / 2.0,
+                        ENEMY_SIZE,
+                        ENEMY_SIZE,
+                    )) {
+                        // Destroy enemy and bullet
+                        enemy.active = false;
+                        bullet.active = false;
+                        game_state.score += 10; // Points for killing enemy
+                        break;
+                    }
+                }
+            }
+        }
+    }
 }
 
 export fn render() void {
@@ -267,6 +328,22 @@ export fn render() void {
         }
     }
 
+    // Draw bullets (yellow rectangles)
+    for (game_state.bullets) |bullet| {
+        if (bullet.active) {
+            gpu_draw_rect(
+                bullet.pos.x,
+                bullet.pos.y,
+                BULLET_WIDTH,
+                BULLET_HEIGHT,
+                1.0,
+                1.0,
+                0.0,
+                1.0,
+            );
+        }
+    }
+
     // Draw player (triangle - cyan/blue)
     const px = game_state.player.pos.x;
     const py = game_state.player.pos.y;
@@ -303,6 +380,17 @@ export fn get_score() i32 {
 }
 
 // Helper functions
+
+fn spawn_bullet() void {
+    for (&game_state.bullets) |*bullet| {
+        if (!bullet.active) {
+            bullet.active = true;
+            bullet.pos.x = game_state.player.pos.x - BULLET_WIDTH / 2.0;
+            bullet.pos.y = game_state.player.pos.y - PLAYER_SIZE / 2.0 - BULLET_HEIGHT;
+            break;
+        }
+    }
+}
 
 fn spawn_entity() void {
     const hallway_left = (CANVAS_WIDTH - HALLWAY_WIDTH) / 2.0;

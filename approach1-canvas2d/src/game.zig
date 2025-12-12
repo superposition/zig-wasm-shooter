@@ -8,11 +8,25 @@ const SPAWN_INTERVAL: f32 = 1.5;
 const GAME_WIDTH: f32 = 800.0;
 const GAME_HEIGHT: f32 = 600.0;
 const MAX_ENTITIES: usize = 100;
+const MAX_BULLETS: usize = 50;
+const BULLET_SPEED: f32 = 400.0;
+const BULLET_WIDTH: f32 = 4.0;
+const BULLET_HEIGHT: f32 = 10.0;
+const SHOOT_COOLDOWN: f32 = 0.15;
+const KEY_SPACE: usize = 32;
 
 // Entity types
 const EntityType = enum(i32) {
     Enemy = 0,
     Obstacle = 1,
+    Bullet = 2,
+};
+
+// Bullet structure
+const Bullet = struct {
+    x: f32,
+    y: f32,
+    active: bool,
 };
 
 // Player structure
@@ -101,6 +115,9 @@ const GameState = struct {
     player: Player,
     entities: [MAX_ENTITIES]Entity,
     entity_count: usize,
+    bullets: [MAX_BULLETS]Bullet,
+    bullet_count: usize,
+    shoot_cooldown: f32,
     score: i32,
     spawn_timer: f32,
     key_states: [256]bool,
@@ -113,6 +130,9 @@ var initialized: bool = false;
 
 // Entity data buffer for JS interop (x, y, width, height, type)
 var entity_data_buffer: [5]f32 = undefined;
+
+// Bullet data buffer for JS interop (x, y, width, height)
+var bullet_data_buffer: [4]f32 = undefined;
 
 // Simple PRNG (Linear Congruential Generator)
 fn random(state: *u64) f32 {
@@ -134,6 +154,9 @@ export fn init() void {
         },
         .entities = undefined,
         .entity_count = 0,
+        .bullets = undefined,
+        .bullet_count = 0,
+        .shoot_cooldown = 0.0,
         .score = 0,
         .spawn_timer = 0.0,
         .key_states = [_]bool{false} ** 256,
@@ -153,6 +176,16 @@ export fn init() void {
                 .entity_type = EntityType.Enemy,
                 .active = false,
             },
+        };
+    }
+
+    // Initialize all bullets as inactive
+    var j: usize = 0;
+    while (j < MAX_BULLETS) : (j += 1) {
+        game_state.bullets[j] = Bullet{
+            .x = 0,
+            .y = 0,
+            .active = false,
         };
     }
 
@@ -229,6 +262,25 @@ fn spawnEntity() void {
     }
 }
 
+// Spawn a bullet from player position
+fn spawnBullet() void {
+    if (game_state.bullet_count >= MAX_BULLETS) return;
+
+    // Find first inactive bullet slot
+    var i: usize = 0;
+    while (i < MAX_BULLETS) : (i += 1) {
+        if (!game_state.bullets[i].active) {
+            game_state.bullets[i] = Bullet{
+                .x = game_state.player.x + game_state.player.width / 2.0 - BULLET_WIDTH / 2.0,
+                .y = game_state.player.y - BULLET_HEIGHT,
+                .active = true,
+            };
+            game_state.bullet_count += 1;
+            break;
+        }
+    }
+}
+
 // Update game logic
 export fn update(delta_time: f32) void {
     if (!initialized) return;
@@ -252,6 +304,13 @@ export fn update(delta_time: f32) void {
     }
     if (game_state.key_states[83] or game_state.key_states[115]) { // S or s
         game_state.player.velocity_y = PLAYER_SPEED;
+    }
+
+    // Handle shooting with spacebar
+    game_state.shoot_cooldown -= delta_time;
+    if (game_state.key_states[KEY_SPACE] and game_state.shoot_cooldown <= 0.0) {
+        spawnBullet();
+        game_state.shoot_cooldown = SHOOT_COOLDOWN;
     }
 
     // Update player position
@@ -338,6 +397,52 @@ export fn update(delta_time: f32) void {
         }
     }
 
+    // Update bullets
+    var b: usize = 0;
+    while (b < MAX_BULLETS) : (b += 1) {
+        if (!game_state.bullets[b].active) continue;
+
+        // Move bullet up
+        game_state.bullets[b].y -= BULLET_SPEED * delta_time;
+
+        // Remove if off screen
+        if (game_state.bullets[b].y + BULLET_HEIGHT < 0) {
+            game_state.bullets[b].active = false;
+            game_state.bullet_count -= 1;
+            continue;
+        }
+
+        // Check collision with enemies
+        var e: usize = 0;
+        while (e < MAX_ENTITIES) : (e += 1) {
+            if (!game_state.entities[e].isActive()) continue;
+
+            switch (game_state.entities[e]) {
+                .enemy => |*enemy| {
+                    if (checkCollision(
+                        game_state.bullets[b].x,
+                        game_state.bullets[b].y,
+                        BULLET_WIDTH,
+                        BULLET_HEIGHT,
+                        enemy.x,
+                        enemy.y,
+                        enemy.width,
+                        enemy.height,
+                    )) {
+                        // Destroy enemy and bullet
+                        enemy.active = false;
+                        game_state.entity_count -= 1;
+                        game_state.bullets[b].active = false;
+                        game_state.bullet_count -= 1;
+                        game_state.score += 10; // Points for killing enemy
+                        break;
+                    }
+                },
+                .obstacle => {},
+            }
+        }
+    }
+
     // Increment score (10 points per second survived)
     game_state.score += @as(i32, @intFromFloat(delta_time * 10.0));
 }
@@ -404,4 +509,42 @@ export fn get_entity_data(index: i32) [*]f32 {
     // If index not found, return empty data
     entity_data_buffer = [_]f32{ 0.0, 0.0, 0.0, 0.0, 0.0 };
     return &entity_data_buffer;
+}
+
+// Get number of active bullets
+export fn get_bullet_count() i32 {
+    if (!initialized) return 0;
+    var count: i32 = 0;
+    var i: usize = 0;
+    while (i < MAX_BULLETS) : (i += 1) {
+        if (game_state.bullets[i].active) {
+            count += 1;
+        }
+    }
+    return count;
+}
+
+// Get bullet data at index (returns pointer to [x, y, width, height])
+export fn get_bullet_data(index: i32) [*]f32 {
+    if (!initialized) return &bullet_data_buffer;
+    if (index < 0) return &bullet_data_buffer;
+
+    var current_index: i32 = 0;
+    var i: usize = 0;
+    while (i < MAX_BULLETS) : (i += 1) {
+        if (game_state.bullets[i].active) {
+            if (current_index == index) {
+                bullet_data_buffer[0] = game_state.bullets[i].x;
+                bullet_data_buffer[1] = game_state.bullets[i].y;
+                bullet_data_buffer[2] = BULLET_WIDTH;
+                bullet_data_buffer[3] = BULLET_HEIGHT;
+                return &bullet_data_buffer;
+            }
+            current_index += 1;
+        }
+    }
+
+    // If index not found, return empty data
+    bullet_data_buffer = [_]f32{ 0.0, 0.0, 0.0, 0.0 };
+    return &bullet_data_buffer;
 }

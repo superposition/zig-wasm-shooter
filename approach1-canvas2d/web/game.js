@@ -155,6 +155,24 @@ function render() {
         }
     }
 
+    // Draw bullets (yellow rectangles)
+    const bulletCount = wasmInstance.exports.get_bullet_count();
+    for (let i = 0; i < bulletCount; i++) {
+        const dataPtr = wasmInstance.exports.get_bullet_data(i);
+        const dataView = new Float32Array(wasmMemory.buffer, dataPtr, 4);
+        const bx = dataView[0];
+        const by = dataView[1];
+        const bw = dataView[2];
+        const bh = dataView[3];
+
+        // Draw bullet with glow effect
+        ctx.fillStyle = '#ffff00';
+        ctx.shadowColor = '#ffff00';
+        ctx.shadowBlur = 5;
+        ctx.fillRect(bx, by, bw, bh);
+        ctx.shadowBlur = 0;
+    }
+
     // Draw player as green triangle
     if (playerHealth > 0) {
         drawTriangle(playerX, playerY, PLAYER_SIZE, '#33ff33');
